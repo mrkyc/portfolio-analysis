@@ -7,7 +7,7 @@ def main():
     # currency in which the portfolio data will be analyzed
     analysis_currency = "EUR"
 
-    # tickers of securities in portfolio to download from yahoo finance
+    # tickers and the corresponding currencies of securities in portfolio to download from yahoo finance
     tickers_and_currencies = {
         "VWCE.DE": "EUR",
         "ISAC.L": "USD",
@@ -70,7 +70,7 @@ def main():
 
     # ------------------- portfolio analysis ------------------- #
 
-    # currency = currency.upper()
+    # take securities names from tickers_and_currencies dictionary
     securities = [
         security_name.split(".")[0] for security_name in tickers_and_currencies
     ]
@@ -97,7 +97,7 @@ def main():
     securities_data, exchange_rates = download_yahoo(
         tickers, distinct_currencies, ohlc, analysis_currency, securities
     )
-    
+
     # calculate values of securities in analysis currency
     for ticker, currency in tickers_and_currencies.items():
         security_name = ticker.split(".")[0]
