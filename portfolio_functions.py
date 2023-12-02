@@ -56,15 +56,15 @@ def generate_plot(
     None
     """
     # prepare path to save plot by adding title and extension to folder_path
-    path = folder_path + f"\\{title}.png"
+    path = os.path.join(folder_path, f"{title}.png")
 
     # set labels and title of the plot
     x_axis_label = "Date"
     y_axis_label = f"Value [{analysis_currency}]" if analysis_currency else "Value"
 
     # set start and end date of the plot
-    start_date = data.index[0].strftime("%Y-%m-%d")
-    end_date = data.index[-1].strftime("%Y-%m-%d")
+    start_date = data[column1].dropna().index[0].strftime("%Y-%m-%d")
+    end_date = data[column1].dropna().index[-1].strftime("%Y-%m-%d")
 
     plt.figure(figsize=(10, 6))
     plt.xlabel(x_axis_label)
@@ -294,12 +294,15 @@ def download_yahoo(tickers, distinct_currencies, ohlc, analysis_currency, securi
         ohlc
     ]
 
-    # create DataFrame with downloaded exchange rates
-    exchange_rates = pd.DataFrame(yahoo_currencies_data)
-
-    # set columns order to a specified one in order to correctly set columns names later
-    exchange_rates = exchange_rates[distinct_currency_pairs_format]
-    exchange_rates.columns = distinct_currency_pairs
+    # check if yahoo_currencies_data is a Series or DataFrame
+    if isinstance(yahoo_currencies_data, pd.Series):
+        # create DataFrame with downloaded exchange rate and set column name to currency pair
+        exchange_rates = pd.DataFrame(yahoo_currencies_data)
+        exchange_rates.columns = distinct_currency_pairs
+    else:
+        # set columns order to a specified one in order to correctly set columns names later
+        exchange_rates = yahoo_currencies_data[distinct_currency_pairs_format]
+        exchange_rates.columns = distinct_currency_pairs
 
     # if there is analysis currency in distinct currencies then add column with exchange rates equal to 1.0
     if distinct_currencies.index(analysis_currency) != -1:
@@ -316,7 +319,8 @@ def download_yahoo(tickers, distinct_currencies, ohlc, analysis_currency, securi
 
 
 def load_portfolio_transactions_data(
-    portfolio_data_file_path,
+    portfolio_data_file_name,
+    data_folder_path,
     exchange_rates,
     transaction_payment_list,
     fee_payment_list,
@@ -327,8 +331,10 @@ def load_portfolio_transactions_data(
 
     Parameters
     ----------
-    portfolio_data_file_path : str
-        Path to .csv file with portfolio data
+    portfolio_data_file_name : str
+        Name of the .csv file with portfolio data
+    data_folder_path : str
+        Path to folder where portfolio data files are stored
     exchange_rates : DataFrame
         DataFrame with exchange rates
     transaction_payment_list : list
@@ -344,7 +350,9 @@ def load_portfolio_transactions_data(
         DataFrame with portfolio transactions data converted to analysis currency
     """
     portfolio_data = pd.read_csv(
-        portfolio_data_file_path, index_col=0, low_memory=False
+        os.path.join(data_folder_path, portfolio_data_file_name),
+        index_col=0,
+        low_memory=False,
     )
     portfolio_data.index = pd.to_datetime(portfolio_data.index, format="%Y-%m-%d")
     portfolio_data.index.name = DATE
@@ -375,11 +383,11 @@ def load_portfolio_transactions_data(
 def prepare_portfolio_data(
     securities_data,
     exchange_rates,
-    securities,
     transaction_payments,
     fee_payments,
     analysis_currency,
-    portfolio_data_files_paths_and_payments_columns,
+    portfolio_data_files_names_and_payments_columns,
+    data_folder_path,
     first_transaction_date,
 ):
     """
@@ -391,16 +399,16 @@ def prepare_portfolio_data(
         DataFrame with securities data
     exchange_rates : DataFrame
         DataFrame with exchange rates
-    securities : list
-        List of securities names
     transaction_payments : dict
         Dictionary with transaction payments columns and their currencies
     fee_payments : dict
         Dictionary with fee payments columns and their currencies
     analysis_currency : str
         Currency in which the analysis will be done
-    portfolio_data_files_paths_and_payments_columns : dict
-        Dictionary with portfolio data files paths and corresponding payments columns (buy/sold and fees)
+    portfolio_data_files_names_and_payments_columns : dict
+        Dictionary with portfolio data files names and corresponding payments columns (buy/sold and fees)
+    data_folder_path : str
+        Path to folder where portfolio data files are stored
     first_transaction_date : str
         First transaction date
 
@@ -424,9 +432,9 @@ def prepare_portfolio_data(
     # load portfolio data from .csv files where dates, securities and values of transactions are stored and concatenate them into one DataFrame
     portfolio_data = pd.DataFrame()
     for (
-        portfolio_data_path,
+        portfolio_data_file_name,
         payment_columns,
-    ) in portfolio_data_files_paths_and_payments_columns.items():
+    ) in portfolio_data_files_names_and_payments_columns.items():
         # take column which specifies the transaction payment currency, find a currency and create a list with column name and currency
         transaction_column = payment_columns.get(TRANSACTION_PAYMENT_COLUMN_NAME)
         transaction_currency = transaction_payments.get(transaction_column)
@@ -439,7 +447,8 @@ def prepare_portfolio_data(
 
         # load part of portfolio data from .csv file
         portfolio_data_part = load_portfolio_transactions_data(
-            portfolio_data_path,
+            portfolio_data_file_name,
+            data_folder_path,
             exchange_rates,
             transaction_payment_list,
             fee_payment_list,
@@ -451,19 +460,6 @@ def prepare_portfolio_data(
 
     # merge raw securities data with portfolio data
     portfolio_data = securities_data.join(portfolio_data, rsuffix=COUNT_SUFFIX)
-
-    # list of columns for portfolio different values for each security
-    portfolio_data_columns_count = [col + COUNT_SUFFIX for col in securities]
-    portfolio_data_columns_value = [col + VALUE_SUFFIX for col in securities]
-    portfolio_data_columns_expense = [col + EXPENSE_SUFFIX for col in securities]
-
-    # assign values from portfolio_data_columns_count to portfolio_data_columns_value and portfolio_data_columns_expense as values and expenses will be calculated later using these count values
-    portfolio_data[portfolio_data_columns_value] = portfolio_data[
-        portfolio_data_columns_count
-    ]
-    portfolio_data[portfolio_data_columns_expense] = portfolio_data[
-        portfolio_data_columns_count
-    ]
 
     # sort index in ascending order to ensure that the dates are in the desired order
     portfolio_data = portfolio_data.sort_index()
@@ -830,6 +826,10 @@ def calculate_portfolio_values(
     DataFrame
         DataFrame with portfolio data with calculated values
     """
+    # assign values from securities_count to securities_value and securities_expense as values and expenses will be calculated later using these count values
+    portfolio_data[securities_value] = portfolio_data[securities_count]
+    portfolio_data[securities_expense] = portfolio_data[securities_count]
+
     # rename columns to more informative names
     portfolio_data = portfolio_data.rename(
         columns=dict(zip(securities, securities_unit_value))

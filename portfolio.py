@@ -21,23 +21,26 @@ def main():
     weights = {"STOCKS": 50, "BONDS": 30, "GOLD": 20}
 
     # securities groups
-    weights_groups = {
+    weight_groups = {
         "STOCKS": ["VWCE", "ISAC"],
         "BONDS": ["VAGP", "SAGG"],
         "GOLD": ["4GLD", "IGLN"],
     }
 
+    # path to folder with portfolio data files
+    data_folder_path = "data"
+
     # portfolio data files
-    portfolio_data_files_paths_and_payments_columns = {
-        "data\\portfolio_broker1.csv": {
+    portfolio_data_files_names_and_payments_columns = {
+        "portfolio_broker1.csv": {
             "TRANSACTION_PAYMENT": "transaction",
             "FEE_PAYMENT": "trx_fee",
         },
-        "data\\portfolio_broker2.csv": {
+        "portfolio_broker2.csv": {
             "TRANSACTION_PAYMENT": "transactions",
             "FEE_PAYMENT": "fees",
         },
-        "data\\portfolio_broker3.csv": {
+        "portfolio_broker3.csv": {
             "TRANSACTION_PAYMENT": "trx_values",
             "FEE_PAYMENT": "fees",
         },
@@ -110,11 +113,11 @@ def main():
     portfolio_data = prepare_portfolio_data(
         securities_data,
         exchange_rates,
-        securities,
         transaction_payments,
         fee_payments,
         analysis_currency,
-        portfolio_data_files_paths_and_payments_columns,
+        portfolio_data_files_names_and_payments_columns,
+        data_folder_path,
         first_transaction_date,
     )
 
@@ -125,7 +128,7 @@ def main():
         analysis_currency,
         securities,
         weights,
-        weights_groups,
+        weight_groups,
         start_date,
         end_date,
         plots_folder_path,

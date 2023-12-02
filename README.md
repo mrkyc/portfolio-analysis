@@ -2,7 +2,7 @@
 
 Analysis and monitoring of the investment portfolio.
 
-## Table of Contents
+## Table of contents
 
 1. [Overview](#overview)
 2. [Usage](#usage)
@@ -12,7 +12,7 @@ Analysis and monitoring of the investment portfolio.
 
 Based on the provided portfolio `.csv` files, the code calculates values such as securities value and profit over time. It converts all data to a specified **analysis currency** to facilitate the analysis. Additionally, it generates analysis plots described below.
 
-It is mainly intended for portfolios consisting of ETFs. Therefore, I will use ETFs in examples below.
+It is mainly intended for portfolios consisting of ETFs (Exchange Traded Funds). Therefore, I will use ETFs in examples below.
 
 The data for analysis comes from Yahoo Finance, and it is retrieved using the yfinance library.
 
@@ -78,7 +78,9 @@ The following parameters should be considered:
 - `analysis_currency` - The currency in which the analysis will be performed.
 - `tickers_and_currencies` - A dictionary where the keys are for securities tickers and the values are for currencies for the corresponding securities.
 - `weights` - A dictionary conatining weight groups names as keys and the securities name list (tickers characters before the dot) as the corresponding values.
-- `portfolio_data_files_paths_and_payments_columns` - A dictionary with paths to portfolio files as keys. The values are smaller dictionaries, each containing two key-value pairs. The first pair has the key **_TRANSACTION_PAYMENT_**, and the corresponding value is the column name in the portfolio file representing transaction payments (buy/sell) without broker fees. The second pair has the key **_FEE_PAYMENT_**, and the corresponding value is the column name in the portfolio file representing fees payment for transactions.
+- `weight_groups` - A dictionary with the securities that make up a given group
+- `data_folder_path` - Path to folder with portfolio data files
+- `portfolio_data_files_names_and_payments_columns` - A dictionary with names of portfolio files as keys. The values are smaller dictionaries, each containing two key-value pairs. The first pair has the key **_TRANSACTION_PAYMENT_**, and the corresponding value is the column name in the portfolio file representing transaction payments (buy/sell) without broker fees. The second pair has the key **_FEE_PAYMENT_**, and the corresponding value is the column name in the portfolio file representing fees payment for transactions.
 - `transaction_payments` - A dictionary with the columns from portfolio data files specified as **_TRANSACTION_PAYMENT_** as keys. The values are the corresponding currencies in which the amount is specified.
 - `fee_payments` - A dictionary with the columns from portfolio data files specified as **_FEE_PAYMENT_** as keys. The values are the corresponding currencies in which the amount is specified.
 - `first_transaction_date` - The date of the first transaction in portfolio.
